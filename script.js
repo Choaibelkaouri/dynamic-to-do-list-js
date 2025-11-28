@@ -1,19 +1,25 @@
-// Run the script after the DOM is fully loaded
+// Run code when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function () {
-    // Select DOM elements
+    // Select elements
     const addButton = document.getElementById('add-task-btn');
     const taskInput = document.getElementById('task-input');
     const taskList = document.getElementById('task-list');
 
-    // Function to add a new task
-    function addTask() {
-        // Get and trim the task text
-        const taskText = taskInput.value.trim();
+    /**
+     * Add a task to the DOM (and optionally save it to Local Storage)
+     * @param {string} taskText - The text of the task
+     * @param {boolean} [save=true] - Whether to save the task to Local Storage
+     */
+    function addTask(taskText, save = true) {
+        // If called without taskText (from button/Enter), read from input
+        if (typeof taskText === 'undefined') {
+            taskText = taskInput.value.trim();
 
-        // If input is empty, alert the user
-        if (taskText === "") {
-            alert('Please enter a task.');
-            return;
+            // If input is empty, alert the user
+            if (taskText === "") {
+                alert('Please enter a task.');
+                return;
+            }
         }
 
         // Create a new li element and set its textContent
@@ -23,14 +29,21 @@ document.addEventListener('DOMContentLoaded', function () {
         // Create the remove button
         const removeButton = document.createElement('button');
         removeButton.textContent = 'Remove';
-
         // Give it the class name 'remove-btn' using classList.add
         removeButton.classList.add('remove-btn');
 
-        // Assign onclick event to remove this li from taskList
+        // Assign onclick event to remove this li from taskList and Local Storage
         removeButton.onclick = function () {
+            // Remove from DOM
             taskList.removeChild(listItem);
-            // or: listItem.remove();
+
+            // Remove from Local Storage
+            const storedTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const index = storedTasks.indexOf(taskText);
+            if (index > -1) {
+                storedTasks.splice(index, 1);
+                localStorage.setItem('tasks', JSON.stringify(storedTasks));
+            }
         };
 
         // Append the remove button to the li
@@ -39,17 +52,40 @@ document.addEventListener('DOMContentLoaded', function () {
         // Append the li to the task list
         taskList.appendChild(listItem);
 
-        // Clear the input field
-        taskInput.value = '';
+        // If we’re adding from the UI (not from loadTasks)
+        if (save) {
+            // Clear the input field
+            taskInput.value = '';
+
+            // Save to Local Storage
+            const storedTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            storedTasks.push(taskText);
+            localStorage.setItem('tasks', JSON.stringify(storedTasks));
+        }
     }
 
-    // Add click listener to the "Add Task" button
-    addButton.addEventListener('click', addTask);
+    /**
+     * Load tasks from Local Storage and add them to the DOM
+     */
+    function loadTasks() {
+        const storedTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+        storedTasks.forEach(function (taskText) {
+            // 'false' so we don't re-save again to Local Storage
+            addTask(taskText, false);
+        });
+    }
 
-    // Allow adding task by pressing Enter in the input field
+    // Add task on button click
+    addButton.addEventListener('click', function () {
+        addTask(); // will read from taskInput internally
+    });
+
+    // Add task on Enter key
     taskInput.addEventListener('keypress', function (event) {
         if (event.key === 'Enter') {
-            addTask();
+            addTask(); // will read from taskInput internally
         }
     });
-});
+
+    // Load tasks from Local Storage when the page loads
+    loadTas
